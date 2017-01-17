@@ -59,3 +59,20 @@ buildNumber.properties
 hs_err_pid*
 
 # End of https://www.gitignore.io/api/eclipse,java,git,m2e,maven
+
+### Intellij+iml ###
+.idea
+
+## File-based project format:
+*.iws
+
+### Intellij+iml Patch ###
+# Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-249601023
+
+*.iml
+modules.xml
+.idea/misc.xml
+*.ipr
+
+# Jenkins plugin
+work/
