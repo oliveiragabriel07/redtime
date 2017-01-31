@@ -1,0 +1,40 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout"
+  xmlns:t="/lib/hudson" xmlns:dp="/hudson/plugins/view/dashboard">
+  <j:set var="reds" value="${it.reds}" />
+
+  <table>
+    <tr style="border-top: 0px;">
+    <th align="left">${%Job name}</th>
+      <th align="left">${%Failure}</th>
+      <th align="left">${%Fix}</th>
+      <th align="left">${%Duration}</th>
+    </tr>
+
+    <j:forEach var="red" items="${reds}">
+      <tr>
+        <td>${red.job.fullDisplayName}</td>
+        <td>
+            <j:if test="${red.failure != null}">
+                ${red.failure.number}
+            </j:if>
+            <j:if test="${red.failure == null}">
+                -
+            </j:if>
+        </td>
+        <td>
+            <j:if test="${red.repair != null}">
+                ${red.repair.number}
+            </j:if>
+            <j:if test="${red.repair == null}">
+                -
+            </j:if>
+        </td>
+        <td>
+            ${red.durationString}
+        </td>
+      </tr>
+    </j:forEach>
+  </table>
+
+</j:jelly>
