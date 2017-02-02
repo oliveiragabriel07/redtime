@@ -1,0 +1,20 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
+         xmlns:l="/lib/layout">
+    <st:documentation>
+        Generates a link to a job with health report icon
+        <st:attribute name="job" type="hudson.model.Job" use="required">
+            Job object to be displayed.
+        </st:attribute>
+    </st:documentation>
+
+    <j:set var="healthReports" value="${job.buildHealthReports}"/>
+    <j:new var="emptyHealthReport" className="hudson.model.HealthReport"/>
+    <j:set var="buildHealth" value="${empty(healthReports) ? emptyHealthReport : healthReports[0]}"/>
+
+    <a href="${h.getRelativeLinkTo(job)}" class="model-link">
+        <l:icon class="${buildHealth.iconClassName} icon-sm" alt="${buildHealth.score}%"/>
+        <l:breakable value="${job.fullDisplayName}"/>
+    </a>
+</j:jelly>
