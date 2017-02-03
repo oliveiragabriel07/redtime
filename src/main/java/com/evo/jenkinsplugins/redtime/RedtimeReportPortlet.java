@@ -10,6 +10,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 
 public class RedtimeReportPortlet extends DashboardPortlet {
 
@@ -24,34 +25,48 @@ public class RedtimeReportPortlet extends DashboardPortlet {
 
     public List<RedInterval> getReds() {
         List<Job> jobs = getDashboardJobs();
-        List<RedInterval> reds = new ArrayList<>();
+        PriorityQueue<RedInterval> queue = new PriorityQueue<>(jobs.size(),
+                RedInterval.ORDER_BY_REPAIR_DATE);
 
         for (Job job : jobs) {
             Run lastUnsuccessfulBuild = job.getLastUnsuccessfulBuild();
-            int i = 0;
+            if (lastUnsuccessfulBuild != null) {
+                queue.add(getLastRed(job, lastUnsuccessfulBuild));
+            }
+        }
 
-            while (lastUnsuccessfulBuild != null && (maxReds == 0) || i < maxReds) {
-                Run repair = lastUnsuccessfulBuild.getNextBuild();
-                Run initialFailure;
-                Run previousSuccessfulBuild = lastUnsuccessfulBuild.getPreviousSuccessfulBuild();
-                if (previousSuccessfulBuild == null) {
-                    // never succeeded, get the first build
-                    initialFailure = lastUnsuccessfulBuild;
-                    while (initialFailure.getPreviousBuild() != null) {
-                        initialFailure = initialFailure.getPreviousBuild();
-                    }
-                } else {
-                    initialFailure = previousSuccessfulBuild.getNextBuild();
-                }
+        List<RedInterval> reds = new ArrayList<>();
+        while (queue.peek() != null) {
+            RedInterval red = queue.poll();
+            reds.add(red);
+            if (maxReds > 0 && reds.size() == maxReds) {
+                break;
+            }
 
-                reds.add(new RedInterval(job, repair, initialFailure));
-
-                lastUnsuccessfulBuild = getPreviousUnsuccessfulBuild(initialFailure);
-                i++;
+            Run lastUnsuccessfulBuild = getPreviousUnsuccessfulBuild(red.getFailure());
+            if (lastUnsuccessfulBuild != null) {
+                queue.add(getLastRed(red.getJob(), lastUnsuccessfulBuild));
             }
         }
 
         return reds;
+    }
+
+    private RedInterval getLastRed(Job job, Run lastUnsuccessfulBuild) {
+        Run repair = lastUnsuccessfulBuild.getNextBuild();
+        Run initialFailure;
+        Run previousSuccessfulBuild = lastUnsuccessfulBuild.getPreviousSuccessfulBuild();
+        if (previousSuccessfulBuild == null) {
+            // never succeeded, get the first build
+            initialFailure = lastUnsuccessfulBuild;
+            while (initialFailure.getPreviousBuild() != null) {
+                initialFailure = initialFailure.getPreviousBuild();
+            }
+        } else {
+            initialFailure = previousSuccessfulBuild.getNextBuild();
+        }
+
+        return new RedInterval(job, repair, initialFailure);
     }
 
     /**
@@ -61,7 +76,7 @@ public class RedtimeReportPortlet extends DashboardPortlet {
         return getDashboard().getJobs();
     }
 
-    protected Run getPreviousUnsuccessfulBuild(Run build) {
+    private Run getPreviousUnsuccessfulBuild(Run build) {
         Run r = build.getPreviousBuild();
         while (r != null && r.getResult() == Result.SUCCESS)
             r = r.getPreviousBuild();

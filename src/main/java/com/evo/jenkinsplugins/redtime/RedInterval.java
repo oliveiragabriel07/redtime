@@ -4,12 +4,23 @@ import hudson.Util;
 import hudson.model.Job;
 import hudson.model.Run;
 
+import javax.annotation.Nonnull;
+import java.util.Comparator;
 import java.util.GregorianCalendar;
 
 /**
  * Created by gabriel on 16/01/17.
  */
 public class RedInterval {
+    public static final Comparator<RedInterval> ORDER_BY_REPAIR_DATE = new Comparator<RedInterval>() {
+        public int compare(@Nonnull RedInterval lRed, @Nonnull RedInterval rRed) {
+            long lt = lRed.getRepairTime();
+            long rt = rRed.getRepairTime();
+            if (lt > rt) return -1;
+            if (lt < rt) return 1;
+            return 0;
+        }
+    };
     private Job job;
     private Run failure;
     private Run repair;
@@ -50,17 +61,19 @@ public class RedInterval {
     }
 
     public long getDuration() {
-        long failedAt = failure.getStartTimeInMillis() + failure.getDuration();
-        long repairedAt;
+        return getRepairTime() - getFailureTime();
+    }
 
+    public long getFailureTime() {
+        return failure.getStartTimeInMillis() + failure.getDuration();
+    }
+
+    public long getRepairTime() {
         if (isFixed()) {
-            repairedAt = repair.getStartTimeInMillis() + repair.getDuration();
-        } else {
-            // Use current timestamp
-            repairedAt = getCalendar().getTimeInMillis();
+            return repair.getStartTimeInMillis() + repair.getDuration();
         }
 
-        return repairedAt - failedAt;
+        return getCalendar().getTimeInMillis();
     }
 
     public String getDurationString() {
